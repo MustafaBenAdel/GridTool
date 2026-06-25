@@ -5,145 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photopea Grids Plugin</title>
     <style>
-        body {
-            background-color: #262626;
-            color: #dcdcdc;
-            font-family: sans-serif;
-            padding: 15px;
-            margin: 0;
-            text-align: center;
-        }
-        h3 {
-            margin-top: 0;
-            font-size: 16px;
-            color: #fff;
-        }
-        button {
-            background-color: #444;
-            color: #fff;
-            border: 1px solid #222;
-            padding: 10px;
-            margin: 5px 0;
-            width: 100%;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: 0.2s;
-        }
-        button:hover {
-            background-color: #555;
-        }
-        .clear-btn {
-            background-color: #7b2929;
-        }
-        .clear-btn:hover {
-            background-color: #9c3434;
-        }
+        body { background-color: #262626; color: #dcdcdc; font-family: sans-serif; padding: 15px; margin: 0; text-align: center; }
+        h3 { margin-top: 0; font-size: 16px; color: #fff; }
+        button { background-color: #444; color: #fff; border: 1px solid #222; padding: 10px; margin: 5px 0; width: 100%; cursor: pointer; border-radius: 4px; font-size: 14px; transition: 0.2s; }
+        button:hover { background-color: #555; }
+        .clear-btn { background-color: #7b2929; }
+        .clear-btn:hover { background-color: #9c3434; }
     </style>
 </head>
 <body>
 
-    <h3>إضافة الـ Grids</h3>
+    <h3>إضافة الـ Grids (طبقات)</h3>
     
-    <button onclick="runScript('thirds')">قاعدة الأثلاث (Rule of Thirds)</button>
-    <button onclick="runScript('golden')">النسبة الذهبية (Golden Ratio)</button>
-    <button onclick="runScript('triangle')">المثلث الذهبي (Golden Triangle)</button>
+    <button onclick="runGrid('thirds')">قاعدة الأثلاث (Rule of Thirds)</button>
+    <button onclick="runGrid('golden_grid')">النسبة الذهبية (Golden Grid)</button>
+    <button onclick="runGrid('golden_triangle')">المثلث الذهبي (Golden Triangle)</button>
     <hr style="border-color: #444; margin: 15px 0;">
-    <button class="clear-btn" onclick="runScript('clear')">مسح جميع الـ Guides</button>
+    <button class="clear-btn" onclick="runGrid('clear_layers')">مسح شبكات الـ Layers</button>
 
     <script>
-        function runScript(type) {
-            let jsxCode = "";
+        function runGrid(type) {
+            let jsxCode = `
+                function main(gridType) {
+                    if(!app.documents.length) { alert("افتح صورة أولاً!"); return; }
+                    var doc = app.activeDocument;
+                    var w = doc.width.as("px");
+                    var h = doc.height.as("px");
 
-            if (type === 'clear') {
-                jsxCode = `
-                    if(app.documents.length) {
-                        app.activeDocument.guides.removeAll();
+                    var color = new SolidColor();
+                    color.rgb.red = 255; color.rgb.green = 100; color.rgb.blue = 100; // لون أحمر خفيف
+
+                    function createLine(name, x1, y1, x2, y2) {
+                        var path = doc.pathItems.add(name);
+                        var points = [[x1, y1], [x2, y2]];
+                        path.add(points);
+                        path.stroke(color, 2, StrokeLocation.INSIDE); // سمك الخط 2
+                        var layer = doc.activeLayer;
+                        path.removeAll();
+                        return layer;
                     }
-                `;
-            } 
-            else if (type === 'thirds') {
-                // Rule of Thirds (Guides)
-                jsxCode = `
-                    if(!app.documents.length) { alert("افتح صورة أولاً!"); }
-                    else {
-                        var doc = app.activeDocument;
-                        var w = doc.width.as("px");
-                        var h = doc.height.as("px");
-                        doc.guides.add(Direction.VERTICAL, w / 3);
-                        doc.guides.add(Direction.VERTICAL, (w / 3) * 2);
-                        doc.guides.add(Direction.HORIZONTAL, h / 3);
-                        doc.guides.add(Direction.HORIZONTAL, (h / 3) * 2);
+
+                    function clearOldGrid() {
+                        try {
+                            var oldGroup = doc.layerSets.getByName("Grids Group");
+                            if(oldGroup) oldGroup.remove();
+                        } catch(e) {}
                     }
-                `;
-            }
-            else if (type === 'golden') {
-                // Golden Ratio (Guides) - Phi = 1.618
-                jsxCode = `
-                    if(!app.documents.length) { alert("افتح صورة أولاً!"); }
-                    else {
-                        var doc = app.activeDocument;
-                        var w = doc.width.as("px");
-                        var h = doc.height.as("px");
-                        doc.guides.add(Direction.VERTICAL, w * 0.382);
-                        doc.guides.add(Direction.VERTICAL, w * 0.618);
-                        doc.guides.add(Direction.HORIZONTAL, h * 0.382);
-                        doc.guides.add(Direction.HORIZONTAL, h * 0.618);
+
+                    clearOldGrid(); // مسح أي جروب قديم قبل الرسم
+                    
+                    if(gridType === 'clear_layers') return; // لو بس بنمسح
+
+                    // إنشاء جروب جديد
+                    var group = doc.layerSets.add();
+                    group.name = "Grids Group";
+
+                    if (gridType === 'thirds') {
+                        // قاعدة الأثلاث
+                        createLine("HLine 1", 0, h/3, w, h/3);
+                        createLine("HLine 2", 0, (h/3)*2, w, (h/3)*2);
+                        createLine("VLine 1", w/3, 0, w/3, h);
+                        createLine("VLine 2", (w/3)*2, 0, (w/3)*2, h);
+                    } else if (gridType === 'golden_grid') {
+                        // النسبة الذهبية (الشبكة)
+                        var phi = 1.618;
+                        var dx = w * (1 / (1 + phi));
+                        var dy = h * (1 / (1 + phi));
+                        createLine("HLine 1", 0, dy, w, dy);
+                        createLine("HLine 2", 0, h - dy, w, h - dy);
+                        createLine("VLine 1", dx, 0, dx, h);
+                        createLine("VLine 2", w - dx, 0, w - dx, h);
+                    } else if (gridType === 'golden_triangle') {
+                        // المثلث الذهبي
+                        // رسم القطر الرئيسي
+                        createLine("Diag 1", 0, 0, w, h);
+                        // حساب نقاط القطر العمودي
+                        var x = (h*h*w)/(h*h + w*w);
+                        var y = (h*w*w)/(h*h + w*w);
+                        createLine("Diag 2", 0, h, x, y);
+                        createLine("Diag 3", w, 0, w-x, h-y);
                     }
-                `;
-            }
-            else if (type === 'triangle') {
-                // Golden Triangle (Lines on a new layer)
-                jsxCode = `
-                    if(!app.documents.length) { alert("افتح صورة أولاً!"); }
-                    else {
-                        var doc = app.activeDocument;
-                        var w = doc.width.as("px");
-                        var h = doc.height.as("px");
-                        
-                        // إنشاء طبقة جديدة للمثلث
-                        var layer = doc.artLayers.add();
-                        layer.name = "Golden Triangle Grid";
-                        
-                        var color = new SolidColor();
-                        color.rgb.red = 255; color.rgb.green = 50; color.rgb.blue = 50;
+                }
+                main("${type}");
+            `;
 
-                        // دالة مساعدة لرسم خط عن طريق التحديد (Selection) والتعبئة
-                        function drawLine(x1, y1, x2, y2, thickness) {
-                            var angle = Math.atan2(y2 - y1, x2 - x1);
-                            var dx = Math.sin(angle) * (thickness / 2);
-                            var dy = Math.cos(angle) * (thickness / 2);
-                            
-                            var p1 = [x1 - dx, y1 + dy];
-                            var p2 = [x1 + dx, y1 - dy];
-                            var p3 = [x2 + dx, y2 - dy];
-                            var p4 = [x2 - dx, y2 + dy];
-                            
-                            doc.selection.select([p1, p2, p3, p4]);
-                            doc.selection.fill(color);
-                            doc.selection.deselect();
-                        }
-
-                        // حساب نقاط التقاطع العمودية
-                        // نقطة التقاطع للخط العمودي من الزاوية السفلية اليسرى للقطر
-                        var ix = (h * h * w) / (h * h + w * w);
-                        var iy = (h * w * w) / (h * h + w * w);
-
-                        var thickness = 4; // سمك الخط
-
-                        // رسم القطر الرئيسي (من أعلى اليسار لأسفل اليمين)
-                        drawLine(0, 0, w, h, thickness);
-                        
-                        // رسم الخط العمودي الأول (من أسفل اليسار للقطر)
-                        drawLine(0, h, ix, iy, thickness);
-                        
-                        // رسم الخط العمودي الثاني (من أعلى اليمين للقطر)
-                        drawLine(w, 0, w - ix, h - iy, thickness);
-                    }
-                `;
-            }
-
-            // إرسال الكود لبرنامج Photopea لتنفيذه
+            // إرسال الكود لبرنامج Photopea
             window.parent.postMessage(jsxCode, "*");
         }
     </script>
