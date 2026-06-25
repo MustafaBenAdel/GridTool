@@ -9,37 +9,152 @@
         h3 { margin-top: 0; font-size: 16px; color: #fff; }
         button { background-color: #444; color: #fff; border: 1px solid #222; padding: 10px; margin: 5px 0; width: 100%; cursor: pointer; border-radius: 4px; font-size: 14px; transition: 0.2s; }
         button:hover { background-color: #555; }
-        .clear-btn { background-color: #7b2929; }
+        .clear-btn { background-color: #7b2929; margin-top: 15px; }
         .clear-btn:hover { background-color: #9c3434; }
-        .test-btn { background-color: #2b5c8f; border-color: #1a3d61; }
-        .test-btn:hover { background-color: #3b7bba; }
     </style>
 </head>
 <body>
 
-    <h3>إضافة الـ Grids</h3>
-    
-    <button class="test-btn" onclick="runTest()">اختبار الاتصال أولاً</button>
-    <hr style="border-color: #444; margin: 15px 0;">
+    <h3>إضافة الـ Grids الاحترافية</h3>
     
     <button onclick="runGrid('thirds')">قاعدة الأثلاث (Rule of Thirds)</button>
-    <button onclick="runGrid('golden_grid')">النسبة الذهبية (Golden Grid)</button>
     <button onclick="runGrid('golden_triangle')">المثلث الذهبي (Golden Triangle)</button>
+    <button onclick="runGrid('golden_ratio')">النسبة الذهبية (Golden Spiral)</button>
+    <button onclick="runGrid('diagonal')">التركيب القطري (Diagonal Comp)</button>
     
     <hr style="border-color: #444; margin: 15px 0;">
-    <button class="clear-btn" onclick="runGrid('clear_layers')">مسح الشبكات</button>
+    <button class="clear-btn" onclick="runGrid('clear_layers')">مسح شبكات الرسم</button>
 
     <script>
-        // دالة لاختبار الاتصال السريع
-        function runTest() {
-            window.parent.postMessage('alert("الاتصال بين الأداة وفوتوبيا يعمل بنجاح!");', "*");
-        }
-
-        // دالة رسم الشبكات (مكتوبة كسطر واحد لتجنب أخطاء المعالجة)
         function runGrid(type) {
-            let scriptText = 'try { if (!app.documents.length) { alert("الرجاء فتح صورة أولاً!"); } else { var doc = app.activeDocument; var w = parseFloat(doc.width); var h = parseFloat(doc.height); try { var oldGroup = doc.layerSets.getByName("Grids Group"); if (oldGroup) oldGroup.remove(); } catch(e) {} if ("' + type + '" !== "clear_layers") { var group = doc.layerSets.add(); group.name = "Grids Group"; var layer = group.artLayers.add(); layer.name = "Grid Lines"; var color = new SolidColor(); color.rgb.red = 255; color.rgb.green = 50; color.rgb.blue = 50; app.foregroundColor = color; function drawLine(x1, y1, x2, y2) { var t = 3; var angle = Math.atan2(y2 - y1, x2 - x1); var dx = Math.sin(angle) * t; var dy = Math.cos(angle) * t; doc.selection.select([[x1 - dx, y1 + dy], [x1 + dx, y1 - dy], [x2 + dx, y2 - dy], [x2 - dx, y2 + dy]]); doc.selection.fill(app.foregroundColor); } if ("' + type + '" === "thirds") { drawLine(0, h/3, w, h/3); drawLine(0, (h/3)*2, w, (h/3)*2); drawLine(w/3, 0, w/3, h); drawLine((w/3)*2, 0, (w/3)*2, h); } else if ("' + type + '" === "golden_grid") { var dx = w * 0.382; var dy = h * 0.382; drawLine(0, dy, w, dy); drawLine(0, h - dy, w, h - dy); drawLine(dx, 0, dx, h); drawLine(w - dx, 0, w - dx, h); } else if ("' + type + '" === "golden_triangle") { drawLine(0, 0, w, h); var ix = (h*h*w)/(h*h + w*w); var iy = (h*w*w)/(h*h + w*w); drawLine(0, h, ix, iy); drawLine(w, 0, w - ix, h - iy); } doc.selection.deselect(); } } } catch(e) { alert("حدث خطأ: " + e.message); }';
-            
-            window.parent.postMessage(scriptText, "*");
+            // نكتب الكود براحتنا هنا، والـ JS هيحوله لسطر واحد في النهاية عشان فوتوبيا يفهمه بدون أخطاء
+            let jsxCode = `
+            try {
+                if (!app.documents.length) { 
+                    alert("الرجاء فتح صورة أولاً!"); 
+                } else {
+                    var doc = app.activeDocument;
+                    var w = parseFloat(doc.width);
+                    var h = parseFloat(doc.height);
+
+                    // مسح الجروب القديم
+                    try { var oldGroup = doc.layerSets.getByName("Grids Group"); if (oldGroup) oldGroup.remove(); } catch(e) {}
+
+                    if ("${type}" !== "clear_layers") {
+                        var group = doc.layerSets.add();
+                        group.name = "Grids Group";
+                        var layer = group.artLayers.add();
+                        layer.name = "Grid Lines";
+                        
+                        var color = new SolidColor();
+                        color.rgb.red = 255; color.rgb.green = 50; color.rgb.blue = 50;
+                        app.foregroundColor = color;
+
+                        function drawLine(x1, y1, x2, y2) {
+                            var t = 3; // سمك الخط
+                            var angle = Math.atan2(y2 - y1, x2 - x1);
+                            var dx = Math.sin(angle) * t;
+                            var dy = Math.cos(angle) * t;
+                            doc.selection.select([[x1 - dx, y1 + dy], [x1 + dx, y1 - dy], [x2 + dx, y2 - dy], [x2 - dx, y2 + dy]]);
+                            doc.selection.fill(app.foregroundColor);
+                        }
+
+                        if ("${type}" === "thirds") {
+                            // قاعدة الأثلاث
+                            drawLine(0, h/3, w, h/3); 
+                            drawLine(0, (h/3)*2, w, (h/3)*2);
+                            drawLine(w/3, 0, w/3, h); 
+                            drawLine((w/3)*2, 0, (w/3)*2, h);
+                        } 
+                        else if ("${type}" === "golden_triangle") {
+                            // المثلث الذهبي المحدث (يطابق صورتك)
+                            drawLine(0, 0, w, h); // القطر الرئيسي
+                            var ix = (w * h * h) / (w * w + h * h);
+                            var iy = (h * h * h) / (w * w + h * h);
+                            drawLine(0, h, ix, iy); // الخط العمودي الأول
+                            drawLine(w, 0, w - ix, h - iy); // الخط العمودي الثاني
+                        } 
+                        else if ("${type}" === "golden_ratio") {
+                            // الحلزون الذهبي (مربعات + قوس فيبوناتشي يطابق صورتك)
+                            var r = 0.61803398875;
+                            var curX = 0, curY = 0, curW = w, curH = h;
+                            var rects = [];
+                            
+                            // رسم الـ 6 مربعات الذهبية
+                            for(var i=0; i<6; i++) {
+                                var dir = i % 4;
+                                if(dir === 0) { 
+                                    var cutW = curW * r; 
+                                    rects.push({x: curX + curW - cutW, y: curY, w: cutW, h: curH, dir: dir, i: i}); 
+                                    curW -= cutW; 
+                                    drawLine(curX + curW, curY, curX + curW, curY + curH); 
+                                }
+                                else if(dir === 1) { 
+                                    var cutH = curH * r; 
+                                    rects.push({x: curX, y: curY, w: curW, h: cutH, dir: dir, i: i}); 
+                                    curY += cutH; 
+                                    curH -= cutH; 
+                                    drawLine(curX, curY, curX + curW, curY); 
+                                }
+                                else if(dir === 2) { 
+                                    var cutW = curW * r; 
+                                    rects.push({x: curX, y: curY, w: cutW, h: curH, dir: dir, i: i}); 
+                                    curX += cutW; 
+                                    curW -= cutW; 
+                                    drawLine(curX, curY, curX, curY + curH); 
+                                }
+                                else if(dir === 3) { 
+                                    var cutH = curH * r; 
+                                    rects.push({x: curX, y: curY + curH - cutH, w: curW, h: cutH, dir: dir, i: i}); 
+                                    curH -= cutH; 
+                                    drawLine(curX, curY + curH, curX + curW, curY + curH); 
+                                }
+                            }
+                            
+                            // رسم المنحنى (الحلزون)
+                            for(var i=0; i<rects.length; i++) {
+                                var rc = rects[i];
+                                var cx, cy;
+                                if(rc.dir === 0) { cx = rc.x; cy = rc.y + rc.h; }
+                                else if(rc.dir === 1) { cx = rc.x + rc.w; cy = rc.y + rc.h; }
+                                else if(rc.dir === 2) { cx = rc.x + rc.w; cy = rc.y; }
+                                else if(rc.dir === 3) { cx = rc.x; cy = rc.y; }
+                                
+                                var startAng = -rc.i * Math.PI / 2;
+                                var endAng = -(rc.i + 1) * Math.PI / 2;
+                                var segs = 20; // دقة المنحنى
+                                var step = (endAng - startAng) / segs;
+                                var px = cx + rc.w * Math.cos(startAng);
+                                var py = cy + rc.h * Math.sin(startAng);
+                                
+                                for(var j=1; j<=segs; j++) {
+                                    var a = startAng + j * step;
+                                    var nx = cx + rc.w * Math.cos(a);
+                                    var ny = cy + rc.h * Math.sin(a);
+                                    drawLine(px, py, nx, ny);
+                                    px = nx; py = ny;
+                                }
+                            }
+                        } 
+                        else if ("${type}" === "diagonal") {
+                            // التركيب القطري (طريقة Westhoff - تقاطع المعين المائل يطابق صورتك)
+                            var d = Math.min(w, h);
+                            drawLine(0, 0, d, d);
+                            drawLine(0, h, d, h - d);
+                            drawLine(w, 0, w - d, d);
+                            drawLine(w, h, w - d, h - d);
+                        }
+                        
+                        doc.selection.deselect();
+                    }
+                }
+            } catch(e) { 
+                alert("حدث خطأ: " + e.message); 
+            }`;
+
+            // تحويل الكود لسطر واحد عشان ExtendScript ميضربش
+            var oneLineScript = jsxCode.replace(/\n\s*/g, ' ');
+            window.parent.postMessage(oneLineScript, "*");
         }
     </script>
 </body>
