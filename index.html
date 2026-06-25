@@ -27,18 +27,21 @@
 
     <script>
         function runGrid(type) {
-            // نكتب الكود براحتنا هنا، والـ JS هيحوله لسطر واحد في النهاية عشان فوتوبيا يفهمه بدون أخطاء
             let jsxCode = `
-            try {
-                if (!app.documents.length) { 
-                    alert("الرجاء فتح صورة أولاً!"); 
-                } else {
+            (function(){
+                try {
+                    if (!app.documents.length) { 
+                        alert("الرجاء فتح صورة أولاً!"); 
+                        return;
+                    } 
                     var doc = app.activeDocument;
                     var w = parseFloat(doc.width);
                     var h = parseFloat(doc.height);
 
-                    // مسح الجروب القديم
-                    try { var oldGroup = doc.layerSets.getByName("Grids Group"); if (oldGroup) oldGroup.remove(); } catch(e) {}
+                    try { 
+                        var oldGroup = doc.layerSets.getByName("Grids Group"); 
+                        if (oldGroup) oldGroup.remove(); 
+                    } catch(e) {}
 
                     if ("${type}" !== "clear_layers") {
                         var group = doc.layerSets.add();
@@ -51,7 +54,7 @@
                         app.foregroundColor = color;
 
                         function drawLine(x1, y1, x2, y2) {
-                            var t = 3; // سمك الخط
+                            var t = 3; 
                             var angle = Math.atan2(y2 - y1, x2 - x1);
                             var dx = Math.sin(angle) * t;
                             var dy = Math.cos(angle) * t;
@@ -60,27 +63,23 @@
                         }
 
                         if ("${type}" === "thirds") {
-                            // قاعدة الأثلاث
                             drawLine(0, h/3, w, h/3); 
                             drawLine(0, (h/3)*2, w, (h/3)*2);
                             drawLine(w/3, 0, w/3, h); 
                             drawLine((w/3)*2, 0, (w/3)*2, h);
                         } 
                         else if ("${type}" === "golden_triangle") {
-                            // المثلث الذهبي المحدث (يطابق صورتك)
-                            drawLine(0, 0, w, h); // القطر الرئيسي
+                            drawLine(0, 0, w, h);
                             var ix = (w * h * h) / (w * w + h * h);
                             var iy = (h * h * h) / (w * w + h * h);
-                            drawLine(0, h, ix, iy); // الخط العمودي الأول
-                            drawLine(w, 0, w - ix, h - iy); // الخط العمودي الثاني
+                            drawLine(0, h, ix, iy);
+                            drawLine(w, 0, w - ix, h - iy);
                         } 
                         else if ("${type}" === "golden_ratio") {
-                            // الحلزون الذهبي (مربعات + قوس فيبوناتشي يطابق صورتك)
                             var r = 0.61803398875;
                             var curX = 0, curY = 0, curW = w, curH = h;
                             var rects = [];
                             
-                            // رسم الـ 6 مربعات الذهبية
                             for(var i=0; i<6; i++) {
                                 var dir = i % 4;
                                 if(dir === 0) { 
@@ -111,7 +110,6 @@
                                 }
                             }
                             
-                            // رسم المنحنى (الحلزون)
                             for(var i=0; i<rects.length; i++) {
                                 var rc = rects[i];
                                 var cx, cy;
@@ -122,7 +120,7 @@
                                 
                                 var startAng = -rc.i * Math.PI / 2;
                                 var endAng = -(rc.i + 1) * Math.PI / 2;
-                                var segs = 20; // دقة المنحنى
+                                var segs = 20; 
                                 var step = (endAng - startAng) / segs;
                                 var px = cx + rc.w * Math.cos(startAng);
                                 var py = cy + rc.h * Math.sin(startAng);
@@ -137,7 +135,6 @@
                             }
                         } 
                         else if ("${type}" === "diagonal") {
-                            // التركيب القطري (طريقة Westhoff - تقاطع المعين المائل يطابق صورتك)
                             var d = Math.min(w, h);
                             drawLine(0, 0, d, d);
                             drawLine(0, h, d, h - d);
@@ -147,12 +144,12 @@
                         
                         doc.selection.deselect();
                     }
+                } catch(e) { 
+                    alert("حدث خطأ: " + e.message); 
                 }
-            } catch(e) { 
-                alert("حدث خطأ: " + e.message); 
-            }`;
+            })();
+            `;
 
-            // تحويل الكود لسطر واحد عشان ExtendScript ميضربش
             var oneLineScript = jsxCode.replace(/\n\s*/g, ' ');
             window.parent.postMessage(oneLineScript, "*");
         }
