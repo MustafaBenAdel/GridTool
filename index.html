@@ -11,104 +11,35 @@
         button:hover { background-color: #555; }
         .clear-btn { background-color: #7b2929; }
         .clear-btn:hover { background-color: #9c3434; }
+        .test-btn { background-color: #2b5c8f; border-color: #1a3d61; }
+        .test-btn:hover { background-color: #3b7bba; }
     </style>
 </head>
 <body>
 
     <h3>إضافة الـ Grids</h3>
     
+    <button class="test-btn" onclick="runTest()">اختبار الاتصال أولاً</button>
+    <hr style="border-color: #444; margin: 15px 0;">
+    
     <button onclick="runGrid('thirds')">قاعدة الأثلاث (Rule of Thirds)</button>
     <button onclick="runGrid('golden_grid')">النسبة الذهبية (Golden Grid)</button>
     <button onclick="runGrid('golden_triangle')">المثلث الذهبي (Golden Triangle)</button>
+    
     <hr style="border-color: #444; margin: 15px 0;">
     <button class="clear-btn" onclick="runGrid('clear_layers')">مسح الشبكات</button>
 
     <script>
+        // دالة لاختبار الاتصال السريع
+        function runTest() {
+            window.parent.postMessage('alert("الاتصال بين الأداة وفوتوبيا يعمل بنجاح!");', "*");
+        }
+
+        // دالة رسم الشبكات (مكتوبة كسطر واحد لتجنب أخطاء المعالجة)
         function runGrid(type) {
-            let jsxCode = `
-            try {
-                if (!app.documents.length) { 
-                    alert("الرجاء فتح صورة أولاً!"); 
-                } else {
-                    var doc = app.activeDocument;
-                    
-                    // أخذ مقاسات الصورة بالبيكسل بشكل آمن
-                    var w = doc.width;
-                    var h = doc.height;
-                    if (w.as) { w = w.as('px'); h = h.as('px'); }
-                    else { w = parseFloat(w); h = parseFloat(h); }
-
-                    // مسح الجروب القديم لو موجود
-                    try {
-                        var oldGroup = doc.layerSets.getByName("Grids Group");
-                        if (oldGroup) oldGroup.remove();
-                    } catch(e) {}
-
-                    if ('${type}' !== 'clear_layers') {
-                        // عمل جروب جديد
-                        var group = doc.layerSets.add();
-                        group.name = "Grids Group";
-
-                        // عمل لير جديدة جوه الجروب للرسم
-                        var gridLayer = doc.artLayers.add();
-                        gridLayer.name = "Grid Lines";
-                        gridLayer.move(group, ElementPlacement.INSIDE);
-
-                        // إعداد لون الخط (أحمر) وتعيينه كلون أمامي
-                        var color = new SolidColor();
-                        color.rgb.red = 255; 
-                        color.rgb.green = 50; 
-                        color.rgb.blue = 50;
-                        app.foregroundColor = color;
-
-                        // دالة رسم الخطوط بالتحديد والتعبئة
-                        function drawLine(x1, y1, x2, y2) {
-                            var thickness = 4; // سمك الخط
-                            var angle = Math.atan2(y2 - y1, x2 - x1);
-                            var dx = Math.sin(angle) * (thickness / 2);
-                            var dy = Math.cos(angle) * (thickness / 2);
-                            
-                            var p1 = [x1 - dx, y1 + dy];
-                            var p2 = [x1 + dx, y1 - dy];
-                            var p3 = [x2 + dx, y2 - dy];
-                            var p4 = [x2 - dx, y2 + dy];
-                            
-                            doc.selection.select([p1, p2, p3, p4]);
-                            doc.selection.fill(app.foregroundColor);
-                        }
-
-                        // تنفيذ الرسم
-                        if ('${type}' === 'thirds') {
-                            drawLine(0, h/3, w, h/3);
-                            drawLine(0, (h/3)*2, w, (h/3)*2);
-                            drawLine(w/3, 0, w/3, h);
-                            drawLine((w/3)*2, 0, (w/3)*2, h);
-                        } 
-                        else if ('${type}' === 'golden_grid') {
-                            var dx = w * 0.382;
-                            var dy = h * 0.382;
-                            drawLine(0, dy, w, dy);
-                            drawLine(0, h - dy, w, h - dy);
-                            drawLine(dx, 0, dx, h);
-                            drawLine(w - dx, 0, w - dx, h);
-                        } 
-                        else if ('${type}' === 'golden_triangle') {
-                            drawLine(0, 0, w, h); 
-                            var ix = (h*h*w)/(h*h + w*w);
-                            var iy = (h*w*w)/(h*h + w*w);
-                            drawLine(0, h, ix, iy);
-                            drawLine(w, 0, w - ix, h - iy);
-                        }
-
-                        doc.selection.deselect();
-                    }
-                }
-            } catch(e) {
-                alert("حدث خطأ: " + e.message);
-            }
-            `;
-
-            window.parent.postMessage(jsxCode, "*");
+            let scriptText = 'try { if (!app.documents.length) { alert("الرجاء فتح صورة أولاً!"); } else { var doc = app.activeDocument; var w = parseFloat(doc.width); var h = parseFloat(doc.height); try { var oldGroup = doc.layerSets.getByName("Grids Group"); if (oldGroup) oldGroup.remove(); } catch(e) {} if ("' + type + '" !== "clear_layers") { var group = doc.layerSets.add(); group.name = "Grids Group"; var layer = group.artLayers.add(); layer.name = "Grid Lines"; var color = new SolidColor(); color.rgb.red = 255; color.rgb.green = 50; color.rgb.blue = 50; app.foregroundColor = color; function drawLine(x1, y1, x2, y2) { var t = 3; var angle = Math.atan2(y2 - y1, x2 - x1); var dx = Math.sin(angle) * t; var dy = Math.cos(angle) * t; doc.selection.select([[x1 - dx, y1 + dy], [x1 + dx, y1 - dy], [x2 + dx, y2 - dy], [x2 - dx, y2 + dy]]); doc.selection.fill(app.foregroundColor); } if ("' + type + '" === "thirds") { drawLine(0, h/3, w, h/3); drawLine(0, (h/3)*2, w, (h/3)*2); drawLine(w/3, 0, w/3, h); drawLine((w/3)*2, 0, (w/3)*2, h); } else if ("' + type + '" === "golden_grid") { var dx = w * 0.382; var dy = h * 0.382; drawLine(0, dy, w, dy); drawLine(0, h - dy, w, h - dy); drawLine(dx, 0, dx, h); drawLine(w - dx, 0, w - dx, h); } else if ("' + type + '" === "golden_triangle") { drawLine(0, 0, w, h); var ix = (h*h*w)/(h*h + w*w); var iy = (h*w*w)/(h*h + w*w); drawLine(0, h, ix, iy); drawLine(w, 0, w - ix, h - iy); } doc.selection.deselect(); } } } catch(e) { alert("حدث خطأ: " + e.message); }';
+            
+            window.parent.postMessage(scriptText, "*");
         }
     </script>
 </body>
