@@ -15,81 +15,102 @@
 </head>
 <body>
 
-    <h3>إضافة الـ Grids (طبقات)</h3>
+    <h3>إضافة الـ Grids</h3>
     
     <button onclick="runGrid('thirds')">قاعدة الأثلاث (Rule of Thirds)</button>
     <button onclick="runGrid('golden_grid')">النسبة الذهبية (Golden Grid)</button>
     <button onclick="runGrid('golden_triangle')">المثلث الذهبي (Golden Triangle)</button>
     <hr style="border-color: #444; margin: 15px 0;">
-    <button class="clear-btn" onclick="runGrid('clear_layers')">مسح شبكات الـ Layers</button>
+    <button class="clear-btn" onclick="runGrid('clear_layers')">مسح الشبكات</button>
 
     <script>
         function runGrid(type) {
             let jsxCode = `
-                function main(gridType) {
-                    if(!app.documents.length) { alert("افتح صورة أولاً!"); return; }
-                    var doc = app.activeDocument;
-                    var w = doc.width.as("px");
-                    var h = doc.height.as("px");
-
-                    var color = new SolidColor();
-                    color.rgb.red = 255; color.rgb.green = 100; color.rgb.blue = 100; // لون أحمر خفيف
-
-                    function createLine(name, x1, y1, x2, y2) {
-                        var path = doc.pathItems.add(name);
-                        var points = [[x1, y1], [x2, y2]];
-                        path.add(points);
-                        path.stroke(color, 2, StrokeLocation.INSIDE); // سمك الخط 2
-                        var layer = doc.activeLayer;
-                        path.removeAll();
-                        return layer;
-                    }
-
-                    function clearOldGrid() {
-                        try {
-                            var oldGroup = doc.layerSets.getByName("Grids Group");
-                            if(oldGroup) oldGroup.remove();
-                        } catch(e) {}
-                    }
-
-                    clearOldGrid(); // مسح أي جروب قديم قبل الرسم
-                    
-                    if(gridType === 'clear_layers') return; // لو بس بنمسح
-
-                    // إنشاء جروب جديد
-                    var group = doc.layerSets.add();
-                    group.name = "Grids Group";
-
-                    if (gridType === 'thirds') {
-                        // قاعدة الأثلاث
-                        createLine("HLine 1", 0, h/3, w, h/3);
-                        createLine("HLine 2", 0, (h/3)*2, w, (h/3)*2);
-                        createLine("VLine 1", w/3, 0, w/3, h);
-                        createLine("VLine 2", (w/3)*2, 0, (w/3)*2, h);
-                    } else if (gridType === 'golden_grid') {
-                        // النسبة الذهبية (الشبكة)
-                        var phi = 1.618;
-                        var dx = w * (1 / (1 + phi));
-                        var dy = h * (1 / (1 + phi));
-                        createLine("HLine 1", 0, dy, w, dy);
-                        createLine("HLine 2", 0, h - dy, w, h - dy);
-                        createLine("VLine 1", dx, 0, dx, h);
-                        createLine("VLine 2", w - dx, 0, w - dx, h);
-                    } else if (gridType === 'golden_triangle') {
-                        // المثلث الذهبي
-                        // رسم القطر الرئيسي
-                        createLine("Diag 1", 0, 0, w, h);
-                        // حساب نقاط القطر العمودي
-                        var x = (h*h*w)/(h*h + w*w);
-                        var y = (h*w*w)/(h*h + w*w);
-                        createLine("Diag 2", 0, h, x, y);
-                        createLine("Diag 3", w, 0, w-x, h-y);
-                    }
+            (function() {
+                if (!app.documents.length) { 
+                    alert("الرجاء فتح صورة أولاً!"); 
+                    return; 
                 }
-                main("${type}");
+                
+                var doc = app.activeDocument;
+                
+                // التأكد من أن القياسات بالبيكسل
+                var originalRulerUnits = app.preferences.rulerUnits;
+                app.preferences.rulerUnits = Units.PIXELS;
+                
+                var w = parseInt(doc.width);
+                var h = parseInt(doc.height);
+
+                // مسح الجروب القديم لو موجود عشان ميتكررش
+                try {
+                    var oldGroup = doc.layerSets.getByName("Grids Group");
+                    if (oldGroup) oldGroup.remove();
+                } catch(e) {}
+
+                if ('${type}' === 'clear_layers') {
+                    app.preferences.rulerUnits = originalRulerUnits;
+                    return;
+                }
+
+                // عمل جروب جديد
+                var group = doc.layerSets.add();
+                group.name = "Grids Group";
+
+                // عمل لير جديدة جوه الجروب للرسم
+                var gridLayer = doc.artLayers.add();
+                gridLayer.name = "Grid Lines";
+                gridLayer.move(group, ElementPlacement.INSIDE);
+
+                // إعداد لون الخط (أحمر)
+                var color = new SolidColor();
+                color.rgb.red = 255; 
+                color.rgb.green = 50; 
+                color.rgb.blue = 50;
+
+                // دالة رسم الخطوط بالتحديد والتعبئة
+                function drawLine(x1, y1, x2, y2) {
+                    var thickness = 4; // سمك الخط بالبيكسل
+                    var angle = Math.atan2(y2 - y1, x2 - x1);
+                    var dx = Math.sin(angle) * (thickness / 2);
+                    var dy = Math.cos(angle) * (thickness / 2);
+                    
+                    var p1 = [x1 - dx, y1 + dy];
+                    var p2 = [x1 + dx, y1 - dy];
+                    var p3 = [x2 + dx, y2 - dy];
+                    var p4 = [x2 - dx, y2 + dy];
+                    
+                    doc.selection.select([p1, p2, p3, p4]);
+                    doc.selection.fill(color);
+                }
+
+                // تنفيذ الرسم حسب اختيارك
+                if ('${type}' === 'thirds') {
+                    drawLine(0, h/3, w, h/3);
+                    drawLine(0, (h/3)*2, w, (h/3)*2);
+                    drawLine(w/3, 0, w/3, h);
+                    drawLine((w/3)*2, 0, (w/3)*2, h);
+                } 
+                else if ('${type}' === 'golden_grid') {
+                    var dx = w * 0.382;
+                    var dy = h * 0.382;
+                    drawLine(0, dy, w, dy);
+                    drawLine(0, h - dy, w, h - dy);
+                    drawLine(dx, 0, dx, h);
+                    drawLine(w - dx, 0, w - dx, h);
+                } 
+                else if ('${type}' === 'golden_triangle') {
+                    drawLine(0, 0, w, h); // القطر الرئيسي
+                    var ix = (h*h*w)/(h*h + w*w);
+                    var iy = (h*w*w)/(h*h + w*w);
+                    drawLine(0, h, ix, iy);
+                    drawLine(w, 0, w - ix, h - iy);
+                }
+
+                doc.selection.deselect();
+                app.preferences.rulerUnits = originalRulerUnits;
+            })();
             `;
 
-            // إرسال الكود لبرنامج Photopea
             window.parent.postMessage(jsxCode, "*");
         }
     </script>
